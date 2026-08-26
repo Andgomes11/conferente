@@ -601,7 +601,7 @@ list, not to impose a minimum nobody asked for.
 - Produces: `type Escolha = { ok: true; agente: Agente; pontuacoes: Pontuacao[] } | { ok: false; motivo: 'nenhum' | 'ambiguo'; pontuacoes: Pontuacao[]; empatados?: string[] }`,
   `interface Pontuacao { agente: string; pontos: number }`, `escolher(agentes, pedido): Escolha`.
 
-- [ ] **Step 1: write the failing test**
+- [x] **Step 1: write the failing test**
 
 ```ts
 // test/selecao.test.ts
@@ -677,11 +677,11 @@ describe('escolher', () => {
 });
 ```
 
-- [ ] **Step 2: run and watch it fail**
+- [x] **Step 2: run and watch it fail**
 
 Run: `npm test -- --test-name-pattern="escolher"`
 
-- [ ] **Step 3: implement**
+- [x] **Step 3: implement**
 
 ```ts
 // src/agente/selecao.ts
@@ -750,12 +750,41 @@ export function escolher(agentes: readonly Agente[], pedido: string): Escolha {
 }
 ```
 
-- [ ] **Step 4: run, typecheck, commit**
+- [x] **Step 4: run, typecheck, commit**
 
 ```bash
 npm test && npm run typecheck
 git commit -am "feat(agente): scoring router where a tie is an ambiguity, not a winner"
 ```
+
+---
+
+**Done 2026-08-26.** 26 tests, typecheck clean.
+
+Two deviations, both in the scoring rule.
+
+**The rule broke its own invariant.** "A full-phrase match always beats a
+scattered-word match" was stated in the plan and false in the plan's code: with a
+flat bonus of 2 per matched phrase, summed across claims, an agent claiming
+`[image, brief, thing]` scored 4 against `[image brief]`'s 2 on the request
+"write an image brief" — because a one-word claim collects the whole phrase bonus,
+and summing rewards an agent for listing many claims. Fixed twice over: a phrase
+hit is now worth `2 × wordCount`, and an agent scores as its **single best
+claim** rather than the sum. The max is also the more explainable of the two —
+"chosen because this claim matched this way" is a sentence a transcript can
+carry; "chosen because four of its nine claims happened to appear" is not.
+
+**A claim phrase went into a `RegExp` unescaped.** `c++ refactor` is an ordinary
+thing to claim and becomes `/(^| )c++( |$)/` — a SyntaxError that takes down
+selection for every agent. The quieter half is worse: unescaped, the dot in
+`node.js` matches any character, so `nodexjs` scores as a hit and an agent that
+does not claim the request answers it anyway, with no crash and no symptom.
+
+Worth recording how the second one was nearly missed. The first two tests written
+for it passed **without** the escape — `c++ refactor` is a substring of
+"plan a c++ refactor", so the phrase branch returns before any regex is built,
+and `a+b` is valid regex. A test that cannot fail proves nothing. Both were
+replaced with inputs verified to fail against the unescaped version first.
 
 ---
 
