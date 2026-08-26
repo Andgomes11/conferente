@@ -341,7 +341,7 @@ why both gates are in the global constraints.
   `lerFrontmatter(texto): { campos: Record<string, string | string[]>; corpo: string } | { erro: string }`,
   `interpretarAgente(arquivo: string, texto: string): { ok: true; agente: Agente } | { ok: false; erro: string }`.
 
-- [ ] **Step 1: write the failing test**
+- [x] **Step 1: write the failing test**
 
 ```ts
 // test/agente.test.ts
@@ -441,12 +441,12 @@ describe('interpretarAgente', () => {
 });
 ```
 
-- [ ] **Step 2: run it and watch it fail**
+- [x] **Step 2: run it and watch it fail**
 
 Run: `npm test -- --test-name-pattern="Frontmatter|interpretarAgente"`
 Expected: module not found.
 
-- [ ] **Step 3: implement the parser**
+- [x] **Step 3: implement the parser**
 
 ```ts
 // src/agente/frontmatter.ts
@@ -500,7 +500,7 @@ export function lerFrontmatter(texto: string): Frontmatter | { erro: string } {
 }
 ```
 
-- [ ] **Step 4: implement the definition**
+- [x] **Step 4: implement the definition**
 
 ```ts
 // src/agente/definicao.ts
@@ -527,7 +527,7 @@ export interface Agente {
 
 export type Interpretacao = { ok: true; agente: Agente } | { ok: false; erro: string };
 
-const SLUG = /^[a-z][a-z0-9-]{1,48}$/;
+const SLUG = /^[a-z][a-z0-9-]{0,48}$/; // `{1,48}` required two chars and broke four of this task's own fixtures
 
 const lista = (v: string | string[] | undefined): string[] | undefined =>
   v === undefined ? undefined : Array.isArray(v) ? v : [v];
@@ -566,15 +566,27 @@ export function interpretarAgente(arquivo: string, texto: string): Interpretacao
 }
 ```
 
-- [ ] **Step 5: run and watch it pass**
+- [x] **Step 5: run and watch it pass**
 
 Run: `npm test` then `npm run typecheck`
 
-- [ ] **Step 6: commit**
+- [x] **Step 6: commit**
 
 ```bash
 git commit -am "feat(agente): agent files, with a parser that refuses instead of guessing"
 ```
+
+---
+
+**Done 2026-08-26.** 17 tests, typecheck clean.
+
+One deviation, and it was a contradiction inside this task rather than a coding
+mistake: `SLUG = /^[a-z][a-z0-9-]{1,48}$/` requires a minimum of two characters,
+while four of the fixtures in Step 1 use `nome: x`. Three tests failed at the
+wrong field — complaining about `nome` where they meant to reach `proposito`, the
+empty body, and the happy path. One root cause, one fix: `{0,48}`. A one-letter
+agent name is a valid slug; the bound exists to keep a name printable on a CLI
+list, not to impose a minimum nobody asked for.
 
 ---
 
