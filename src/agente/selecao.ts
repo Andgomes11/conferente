@@ -5,6 +5,7 @@
  * this choice has to be defensible in the transcript. No model is consulted:
  * "the model decided" cannot be audited.
  */
+import { escaparRegex } from '../texto/regex.ts';
 import type { Agente } from './definicao.ts';
 
 export interface Pontuacao {
@@ -26,13 +27,6 @@ const normalizar = (s: string): string =>
     .trim();
 
 /**
- * A claim phrase is other people's text, from an agent file. `c++`, `50% off` and
- * `(beta)` are all plausible claims and all are regex metacharacters, so a word
- * goes into a pattern escaped or the router throws on a legal agent file.
- */
-const escapar = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-/**
  * How strongly one claim phrase matches, in words.
  *
  * A whole-phrase hit is worth twice its length; scattered words are worth one
@@ -46,7 +40,7 @@ function valorDaReivindicacao(bruta: string, alvo: string): number {
   if (frase === '') return 0;
   const palavras = frase.split(' ');
   if (alvo.includes(frase)) return 2 * palavras.length;
-  const soltas = palavras.filter((p) => new RegExp(`(^| )${escapar(p)}( |$)`).test(alvo)).length;
+  const soltas = palavras.filter((p) => new RegExp(`(^| )${escaparRegex(p)}( |$)`).test(alvo)).length;
   return Math.min(soltas, Math.max(palavras.length - 1, 0));
 }
 

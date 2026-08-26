@@ -50,6 +50,7 @@ a value rather than a log line.
 | `src/modelo/falso.ts` | deterministic fake used by tests and the demo |
 | `src/execucao/rodar.ts` | request → agent → model → verifiers → disposition |
 | `src/transcricao/transcricao.ts` | the transcript value and its renderer |
+| `src/texto/regex.ts` | escape a string for literal use in a `RegExp` |
 | `src/cli/conferente.ts` | `perguntar` and `agentes` |
 | `agentes/*.md` | the three example agents |
 | `test/*.test.ts` | one suite per pure module, plus one end-to-end |
@@ -1314,7 +1315,7 @@ place.
   `validarVerificadores(agentes, registro): string[]`,
   `VERIFICADORES_EMBUTIDOS: Record<string, Verificador>`.
 
-- [ ] **Step 1: write the failing test**
+- [x] **Step 1: write the failing test**
 
 ```ts
 // test/carregar.test.ts
@@ -1425,9 +1426,9 @@ describe('VERIFICADORES_EMBUTIDOS', () => {
 });
 ```
 
-- [ ] **Step 2: run and watch it fail**
+- [x] **Step 2: run and watch it fail**
 
-- [ ] **Step 3: implement loading**
+- [x] **Step 3: implement loading**
 
 ```ts
 // src/agente/carregar.ts
@@ -1501,7 +1502,7 @@ export function validarVerificadores(agentes: readonly Agente[], registro: Regis
 }
 ```
 
-- [ ] **Step 4: implement the built-in verifiers**
+- [x] **Step 4: implement the built-in verifiers**
 
 Each one takes its criteria from the request, never from a hard-coded list, so the
 harness carries no organisation's content.
@@ -1565,7 +1566,7 @@ export const VERIFICADORES_EMBUTIDOS: Record<string, Verificador> = {
 };
 ```
 
-- [ ] **Step 5: write the three agent files**
+- [x] **Step 5: write the three agent files**
 
 `agentes/voz-de-marca.md`:
 
@@ -1619,12 +1620,42 @@ One metric. If the request implies two, choose the one that decides the question
 and say why you dropped the other.
 ```
 
-- [ ] **Step 6: run, typecheck, commit**
+- [x] **Step 6: run, typecheck, commit**
 
 ```bash
 npm test && npm run typecheck
 git commit -am "feat(agente): loading with loud startup failure, plus example agents and verifiers"
 ```
+
+---
+
+**Done 2026-08-26.** 56 tests, typecheck clean. The plan's twelve tests passed
+first try; probing found one defect, and it is the same one as Task 3 in a second
+place.
+
+**`campos-obrigatorios` built a `RegExp` from a field name in the request,
+unescaped.** Two failure modes, and the quiet one is worse:
+
+    required: cost (usd)  ->  falhou: missing field(s): cost (usd)   (it was present)
+    required: c++ notes   ->  SyntaxError: Nothing to repeat
+
+The first is the serious one. `cost (usd)` as a pattern is a group that never
+matches its own literal text, so a present field read as missing — and the run
+loop withholds output on a failure, so a correct answer was withheld with a reason
+naming a field that was right there. The second throws, which the registry turns
+into `nao_deu_para_conferir` honestly enough, but the check still never runs.
+
+Since this was now the second call site with the same bug for the same reason,
+the escape moved to `src/texto/regex.ts` and Task 3's local copy was replaced with
+an import. Text that came from outside the code was going into a pattern as if it
+were a pattern, in both places.
+
+**Verified beyond the plan's tests:** the three example agent files load from
+`agentes/` with zero errors and every verifier name they declare resolves against
+`VERIFICADORES_EMBUTIDOS` — so `validarVerificadores` returns clean on the
+repository's own agents, which is what Task 7 will rely on. An end-to-end pass
+through all three exercised `conferida`, `retida` (three different verifiers) and
+`sem_agente`.
 
 ---
 
