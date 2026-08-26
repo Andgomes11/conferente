@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor declared in `engines`, and a current release. Type stripping
+        # went from flagged to default between them, so both are worth running.
+        node: ['22.6', '24']
+    name: node ${{ matrix.node }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      # The suite runs against the fake model: no network, no API key, no secrets.
+      - run: npm test

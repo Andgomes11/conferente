@@ -1892,7 +1892,7 @@ this repository — no real adapter ships. The comment says so plainly instead.
 **Files:**
 - Create: `README.md`, `LICENSE.md`, `SECURITY.md`, `.github/workflows/ci.yml`, `.env.example`
 
-- [ ] **Step 1: CI**
+- [x] **Step 1: CI**
 
 ```yaml
 name: ci
@@ -1917,7 +1917,7 @@ jobs:
       - run: npm test
 ```
 
-- [ ] **Step 2: README**
+- [x] **Step 2: README**
 
 Structure, in English, following the sibling project:
 
@@ -1938,7 +1938,7 @@ Structure, in English, following the sibling project:
    identifiers in Portuguese because the metaphor is the vocabulary.
 10. Licence.
 
-- [ ] **Step 3: licence**
+- [x] **Step 3: licence**
 
 FSL-1.1-ALv2, same as the sibling project, fetched from the canonical source
 rather than written from memory:
@@ -1959,6 +1959,41 @@ git push -u origin main
 ```
 
 Private first, as with the sibling project: read the README before it is public.
+
+---
+
+**Steps 1-3 done 2026-08-26.** 72 tests, typecheck clean. Step 4 (publish) is
+deliberately not done: creating a repository and pushing is the author's call, not
+the implementer's.
+
+Three deviations.
+
+**`.env.example` was not created.** The plan lists it, and `.gitignore` already
+un-ignores it, but `grep -rn process.env src/` returns nothing: no code reads an
+environment variable, because no real model adapter ships. A `.env.example` here
+would promise configuration that does not exist — small, and exactly the class of
+untruth the rest of this project spends its effort removing.
+
+**CI runs a matrix rather than one version.** `['22.6', '24']`: the floor declared
+in `engines`, and a current release. Type stripping went from flagged to
+default-on between them, which is the one thing about this project's toolchain
+that could plausibly break on a version bump, so both are worth running.
+
+**The licence was copied from the sibling project rather than fetched.** It is
+already the canonical FSL-1.1-ALv2 text with the placeholders filled, and it was
+checked: `grep -c '\${'` returns 0 and the copyright line is intact. One less
+network call that could fail, and one less chance of a template variable shipping
+unsubstituted.
+
+**Sanitisation, run before the commit** — the same check the sibling project
+needed four passes to get right. `grep` for local paths, the employer's name, and
+the other repository names across every file that ships: clean. The one personal
+name in the tree is the copyright line, which is the point of a copyright line.
+The tmpdir path that appeared in the real startup-failure transcript was replaced
+with `broken/voz.md` in the README, since the real one carried a local directory
+structure.
+
+Every terminal block in the README is real captured output, not illustration.
 
 ---
 
