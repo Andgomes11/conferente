@@ -800,7 +800,7 @@ replaced with inputs verified to fail against the unescaped version first.
   `interface EntradaDeModelo { instrucao: string; pedido: string }`,
   `criarModeloFalso(respostas?: Record<string, string>): ModeloAdapter`.
 
-- [ ] **Step 1: write the failing test**
+- [x] **Step 1: write the failing test**
 
 ```ts
 // test/modelo.test.ts
@@ -844,9 +844,9 @@ describe('criarModeloFalso', () => {
 });
 ```
 
-- [ ] **Step 2: run and watch it fail**
+- [x] **Step 2: run and watch it fail**
 
-- [ ] **Step 3: implement**
+- [x] **Step 3: implement**
 
 ```ts
 // src/modelo/adaptador.ts
@@ -902,11 +902,32 @@ export function criarModeloFalso(respostas: Record<string, string> = {}): Modelo
 }
 ```
 
-- [ ] **Step 4: run, typecheck, commit**
+- [x] **Step 4: run, typecheck, commit**
 
 ```bash
 git commit -am "feat(modelo): one-method adapter and a deterministic fake"
 ```
+
+---
+
+**Done 2026-08-26.** 31 tests, typecheck clean. The plan's four tests passed
+first try; one defect was found by probing beyond them.
+
+**The fake answered by insertion order.** Taking the first matching trigger meant
+`{a, 'brand voice'}` and `{'brand voice', a}` gave different answers to the same
+request — "use our brand voice" contains an "a", so a one-character trigger
+shadowed the specific one. Task 5 drives the whole disposition table from these
+scripts, and this module's own stated rule is that a fake which varies makes
+flaky tests, which teach people to ignore red. Triggers are now sorted longest
+first, once at construction: most specific wins, order-independent.
+
+One suspected defect was probed and is **not** one, so nothing was changed for
+it: `digerir(instrucao + pedido)` is ambiguous about where the split falls, and
+`{instrucao: 'ab', pedido: 'c'}` really does collide with
+`{instrucao: 'a', pedido: 'bc'}`. But the returned string carries the request
+verbatim, so the two answers differ anyway — and a collision with an equal
+`pedido` would require an equal `instrucao`. Worth writing down that it was
+checked rather than assumed.
 
 ---
 
