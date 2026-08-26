@@ -1,0 +1,17 @@
+{
+  "name": "conferente",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "An agent harness that never presents unchecked output as checked",
+  "engines": { "node": ">=22.6" },
+  "scripts": {
+    "test": "node --experimental-strip-types --no-warnings --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "conferente": "node --experimental-strip-types --no-warnings src/cli/conferente.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  }
+}
