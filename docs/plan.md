@@ -1669,7 +1669,7 @@ through all three exercised `conferida`, `retida` (three different verifiers) an
 - Consumes: everything.
 - Produces: `npm run conferente -- agentes` and `npm run conferente -- perguntar "<request>"`.
 
-- [ ] **Step 1: write the end-to-end test**
+- [x] **Step 1: write the end-to-end test**
 
 ```ts
 // test/ponta-a-ponta.test.ts
@@ -1752,9 +1752,9 @@ describe('ponta a ponta', () => {
 });
 ```
 
-- [ ] **Step 2: run and watch it fail**
+- [x] **Step 2: run and watch it fail**
 
-- [ ] **Step 3: implement the CLI**
+- [x] **Step 3: implement the CLI**
 
 ```ts
 // src/cli/conferente.ts
@@ -1824,7 +1824,7 @@ console.error('usage: npm run conferente -- [agentes | perguntar "<request>"]');
 process.exit(1);
 ```
 
-- [ ] **Step 4: verify by hand**
+- [x] **Step 4: verify by hand**
 
 ```bash
 npm run conferente -- agentes
@@ -1840,12 +1840,50 @@ be checked; and `[NO AGENT CLAIMS THIS]`.
 Then break an agent file on purpose — rename a verifier to `nao-existe` — and
 confirm the process refuses to start and names both the agent and the verifier.
 
-- [ ] **Step 5: run, typecheck, commit**
+- [x] **Step 5: run, typecheck, commit**
 
 ```bash
 npm test && npm run typecheck
 git commit -am "feat(cli): perguntar and agentes, with startup that refuses to run broken"
 ```
+
+---
+
+**Done 2026-08-26.** 72 tests, typecheck clean. Three deviations, all found by
+building the thing the plan did not test.
+
+**The plan's end-to-end test never touches the CLI.** It imports the modules and
+would pass with `src/cli/conferente.ts` absent — confirmed by running it before
+writing the CLI: 61 tests, 61 passing, no command in the repository. It is a good
+wiring test and it is not a CLI test. `test/cli.test.ts` was added, spawning the
+command as a process: it is the only thing that would catch a broken argument
+parse, a wrong exit code, or a startup that runs anyway with a broken agent file.
+The plan left all of that to Step 4's manual check.
+
+**Every CLI run would have ended WITHHELD.** The unscripted fake never cites a
+clause, never emits a `metric:` line and never fills a required field, so all four
+example requests come back `retida` — the plan's Step 4 expects one of them to
+show `[PARTIALLY CHECKED]`, and it never would. A stranger cloning the repository
+would run the demo, see WITHHELD four times, and learn nothing about the
+disposition table.
+
+Scripting the fake so the demo looks good was the wrong fix — that is the kind of
+thing this project exists to refuse. Added `--resposta "<answer>"` instead:
+supply the answer explicitly and watch the checks run on it. The checking
+machinery is the product, and this makes it the thing being demonstrated. All four
+dispositions are now reachable by hand, and the README can show real transcripts.
+
+**Exit codes.** The plan exited 1 for `retida` and `erro_de_modelo` only, which
+leaves `sem_agente` and `ambigua` exiting 0 with no answer at all. The rule is now
+`0 when an answer was produced, 1 when none was` — one condition covering every
+disposition, present and future. A script piping `perguntar` must not read a
+withheld answer as a successful one.
+
+Also rewrote the request parse. The plan used
+`args[args.indexOf(a) - 1] !== '--agentes'`, and `indexOf` finds the first
+occurrence of a word, so a request that repeats one is mis-parsed. It is a walk
+now. And the header comment promised `--modelo real`, which does not exist in
+this repository — no real adapter ships. The comment says so plainly instead.
 
 ---
 
