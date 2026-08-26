@@ -945,7 +945,7 @@ The centre of the project. Everything before this was so that this can be honest
   `interface Transcricao { pedido; agente?; pontuacoes; vereditos; disposicao; saida?; motivo? }`,
   `rodar(opcoes: { agentes; registro; modelo; pedido }): Promise<Transcricao>`.
 
-- [ ] **Step 1: write the failing test**
+- [x] **Step 1: write the failing test**
 
 ```ts
 // test/execucao.test.ts
@@ -1087,9 +1087,9 @@ describe('rodar', () => {
 });
 ```
 
-- [ ] **Step 2: run and watch it fail**
+- [x] **Step 2: run and watch it fail**
 
-- [ ] **Step 3: implement the transcript**
+- [x] **Step 3: implement the transcript**
 
 ```ts
 // src/transcricao/transcricao.ts
@@ -1153,7 +1153,7 @@ export function renderizar(t: Transcricao): string {
 }
 ```
 
-- [ ] **Step 4: implement the run loop**
+- [x] **Step 4: implement the run loop**
 
 ```ts
 // src/execucao/rodar.ts
@@ -1262,12 +1262,42 @@ export async function rodar({ agentes, registro, modelo, pedido }: OpcoesDeRodad
 }
 ```
 
-- [ ] **Step 5: run, typecheck, commit**
+- [x] **Step 5: run, typecheck, commit**
 
 ```bash
 npm test && npm run typecheck
 git commit -am "feat(execucao): the disposition table, where an unchecked answer says so"
 ```
+
+---
+
+**Done 2026-08-26.** 43 tests, typecheck clean. The plan's eleven tests passed
+first try; the disposition table then turned out to be missing a row.
+
+**`parcialmente_conferida` claimed checking that never happened.** An agent
+declaring two verifiers, neither registered, produced `[PARTIALLY CHECKED]`
+printed directly above its output — with zero of two checks actually run. The
+design document's row read "none failed, some could not check", and "some"
+quietly assumed at least one had passed. "Partially" asserts that some checking
+happened, so this was the harness telling the caller a comforting thing that was
+not true: the exact failure the whole project exists to prevent, sitting in its
+centre.
+
+Added `nada_conferido` / `NOTHING COULD BE CHECKED`, and updated the table in
+`docs/design.md` — the spec is the source, so the row belongs there too. It stays
+distinct from `nao_conferida` because the two call for different actions:
+declaring no checks is a legitimate choice, while declaring checks nobody
+implemented is a broken setup someone has to fix. Same amount of verification —
+zero — and conflating them hides the second.
+
+Both return the output. Withholding stays reserved for an actual failure, never
+for an absence of information; the harness makes missing verification visible
+rather than punishing the caller for it.
+
+Task 6 must account for the new state: `carregarAgentes` rejecting an unregistered
+verifier name at startup is what makes `nada_conferido` rare in practice, but it
+cannot make it impossible — a verifier that throws at run time reaches the same
+place.
 
 ---
 

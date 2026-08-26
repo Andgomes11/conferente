@@ -96,11 +96,27 @@ Disposition rules, and each is a decision rather than a default:
 |---|---|
 | all passed | the output, marked verified, naming which checks ran |
 | any failed | the output **withheld**, with the failing check and its reason |
-| none failed, some could not check | the output, marked **partially checked**, naming what could not be checked |
+| none failed, some could not check, at least one passed | the output, marked **partially checked**, naming what could not be checked |
+| checks were declared and not one could run | the output, marked **nothing could be checked**, naming each one |
 | no verifiers declared | the output, marked **unchecked** — never "verified" |
 
-The last row is the one that matters. An agent with no checks is legitimate;
-presenting its output as checked is not.
+The last two rows are the ones that matter, and the second-to-last was added on
+2026-08-26 during Task 5, after the implementation demonstrated the hole. With
+four rows, an agent declaring two verifiers that were both unregistered rendered
+`[PARTIALLY CHECKED]` directly above its output — zero of two checks had run.
+"Partially" asserts that some checking happened; the row said "some could not
+check" and quietly assumed at least one had passed.
+
+`nada_conferido` stays distinct from `nao_conferida` because the two call for
+different actions. Declaring no checks is a legitimate choice. Declaring checks
+nobody implemented is a broken setup someone has to fix. The amount of
+verification is the same — zero — and conflating them hides the second.
+
+Both return the output. Withholding is reserved for an actual failure, never for
+an absence of information: this harness makes missing verification visible, it
+does not punish the caller for it.
+
+An agent with no checks is legitimate; presenting its output as checked is not.
 
 ## Failure states
 
