@@ -6,13 +6,15 @@
  * and the thing a test checks cannot drift apart.
  */
 import type { Pontuacao } from '../agente/selecao.ts';
-import type { Veredito } from '../verificacao/veredito.ts';
+import type { NaoDeuParaConferir, Veredito } from '../verificacao/veredito.ts';
 
 export type Disposicao =
   | 'conferida'
   | 'parcialmente_conferida'
   /** Checks were declared and not one of them could run. */
   | 'nada_conferido'
+  /** The caller required checking, none was possible, and no model was called. */
+  | 'recusada_sem_conferencia'
   | 'nao_conferida'
   | 'retida'
   | 'sem_agente'
@@ -26,6 +28,13 @@ export interface Transcricao {
   /** Every agent's score — the numeric answer to "why this agent?". */
   pontuacoes: Pontuacao[];
   vereditos: Veredito[];
+  /**
+   * What the pre-flight objected to, before any model call.
+   *
+   * Empty is the ordinary case, and it means every declared check was able to
+   * run — or said nothing, which the harness treats the same way.
+   */
+  preVoo: NaoDeuParaConferir[];
   disposicao: Disposicao;
   /** Present only when the disposition allows the output to be returned. */
   saida?: string;
@@ -37,6 +46,7 @@ const ROTULO: Record<Disposicao, string> = {
   conferida: 'CHECKED',
   parcialmente_conferida: 'PARTIALLY CHECKED',
   nada_conferido: 'NOTHING COULD BE CHECKED',
+  recusada_sem_conferencia: 'REFUSED — NOTHING CAN BE CHECKED',
   nao_conferida: 'NOT CHECKED',
   retida: 'WITHHELD',
   sem_agente: 'NO AGENT CLAIMS THIS',
@@ -62,6 +72,9 @@ export function renderizar(t: Transcricao): string {
   }
   if (t.vereditos.length === 0 && t.disposicao === 'nao_conferida') {
     linhas.push('  no checks were declared for this agent');
+  }
+  for (const v of t.preVoo) {
+    linhas.push(`  before running — ${v.verificador}: ${v.motivo}`);
   }
   if (t.disposicao === 'nada_conferido') {
     linhas.push(`  every one of the ${t.vereditos.length} declared checks failed to run`);

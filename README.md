@@ -32,7 +32,7 @@ demo that needs a secret is a demo nobody runs.
 
 ```bash
 npm install
-npm test          # 73 tests
+npm test          # 88 tests
 npm run typecheck
 
 npm run conferente -- agentes
@@ -56,6 +56,7 @@ This is the clearest thing in the project.
 | none failed, some could not check, at least one passed | the output, **PARTIALLY CHECKED**, naming what could not be checked |
 | checks were declared and not one could run | the output, **NOTHING COULD BE CHECKED**, naming each one |
 | no verifiers declared | the output, marked **NOT CHECKED** — never "verified" |
+| the caller passed `--exigir-conferencia` and nothing could be checked | **REFUSED**, before the model is called |
 
 The last two rows are the ones that matter, and they are the reason the project
 exists. An agent with no checks is legitimate; presenting its output as checked is
@@ -137,6 +138,37 @@ Draft: we ship on Tuesday. Assumed: the date is fixed. Left out: pricing.
 
 exit 0
 ```
+
+Refusing to answer what cannot be checked. The pre-flight runs before any model
+call, so this costs nothing:
+
+```
+$ conferente perguntar "write an image brief for a cat" --exigir-conferencia
+
+[REFUSED — NOTHING CAN BE CHECKED]
+agent: brief-de-imagem
+reason: campos-obrigatorios: the request lists no required fields
+  before running — campos-obrigatorios: the request lists no required fields
+
+exit 1
+```
+
+Without the flag the same request is answered, and the label carries the truth
+instead:
+
+```
+[NOTHING COULD BE CHECKED]
+agent: brief-de-imagem
+  check campos-obrigatorios: nao_deu_para_conferir — the request lists no required fields
+  every one of the 1 declared checks failed to run
+
+subject: a cat
+
+exit 0
+```
+
+The contract is *do not answer what you cannot check*, not *check everything*: a
+request where one of two checks can run is answered and marked PARTIALLY CHECKED.
 
 Nobody claims the request. No model is called — a default agent would answer a
 question it was never built for:
@@ -228,6 +260,51 @@ be explainable.
 
 Every agent's score lands in the transcript, so "why did this agent answer?" has a
 numeric answer.
+
+## How this differs from a guardrails library
+
+Not a claim about quality — a difference in what the type can express, checked
+against the published API rather than asserted.
+
+Guardrails AI documents a validator's outcome as: *"The outcome of the validation.
+Must be one of 'pass' or 'fail'."* Two states, with no documented behaviour for a
+validator that raises during `validate()`. NVIDIA's NeMo Guardrails models the
+problem differently again — Colang flows with input and output rails — and also
+has no third state.
+
+Two states force every unreachable style guide, timed-out lookup and malformed
+input into one of two buckets, and both are wrong. Into *fail*, and the harness
+cries wolf until people stop reading it. Into *pass*, and it launders unchecked
+output as checked.
+
+That is the whole reason this project exists, and it is why the third state is a
+type and not a convention: `nao_deu_para_conferir` cannot be forgotten, because
+the compiler will not let a caller ignore the variant.
+
+What those libraries have and this does not: a hub of ready-made validators, input
+rails, and tool-call validation. The last one is missing on purpose —
+`docs/design.md` explains that it would require the model adapter to stop being a
+single method, which is a change to a load-bearing decision rather than an
+addition.
+
+## Interoperating: OpenTelemetry GenAI
+
+The transcript is already a structured value rather than a log line, and it maps
+onto the OpenTelemetry GenAI semantic conventions without changing shape:
+
+| transcript | OTel |
+|---|---|
+| the run | `invoke_agent` span, `gen_ai.agent.name` = the chosen agent |
+| `pontuacoes` | span attributes on `invoke_agent` — why this agent, numerically |
+| the model call | child `chat` span, `gen_ai.request.model`, `gen_ai.usage.*` |
+| each verifier | child `execute_tool` span, one per check, name = the verifier |
+| `preVoo` | `execute_tool` spans that ended before the `chat` span began |
+| `disposicao` | span status plus an attribute; `retida` and `recusada_sem_conferencia` are not errors, they are outcomes |
+
+No exporter ships here, and that is deliberate: OpenTelemetry means a dependency,
+and zero runtime dependencies is a stated constraint of this project. The mapping
+is written down so that adding one is a half-hour of work in an adapter, and so
+the choice reads as a decision rather than an omission.
 
 ## Architecture
 

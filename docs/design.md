@@ -99,6 +99,7 @@ Disposition rules, and each is a decision rather than a default:
 | none failed, some could not check, at least one passed | the output, marked **partially checked**, naming what could not be checked |
 | checks were declared and not one could run | the output, marked **nothing could be checked**, naming each one |
 | no verifiers declared | the output, marked **unchecked** — never "verified" |
+| the caller required checking and none was possible | **refused** before the model is called, naming what could not be checked and why |
 
 The last two rows are the ones that matter, and the second-to-last was added on
 2026-08-26 during Task 5, after the implementation demonstrated the hole. With
@@ -117,6 +118,54 @@ an absence of information: this harness makes missing verification visible, it
 does not punish the caller for it.
 
 An agent with no checks is legitimate; presenting its output as checked is not.
+
+## The pre-flight
+
+Every row above is decided *after* the model has answered. That is one row too
+late for a caller who would rather not have an unchecked answer at all.
+
+A verifier that reads its criteria from the request — forbidden terms, required
+fields — already knows before the model runs whether it will be able to check
+anything: if the request lists no forbidden terms, no output will change that. So
+a verifier may declare an optional `preVoo`, which sees only the request and
+answers one question: *can this check run at all?*
+
+The pre-flight never approves anything. Its only useful answer is
+`nao_deu_para_conferir`, and it is advisory by default — the run continues, the
+transcript records it, and the CLI prints it before spending a model call so the
+caller can fix the request instead of paying for an answer nobody can check.
+
+`--exigir-conferencia` turns advice into a contract: *do not answer what you
+cannot check*. When every declared verifier reports it cannot run, the request is
+refused before the model is called. This is the one place where the harness
+withholds for an absence rather than a failure, and it is legitimate precisely
+because the caller asked for it. Without the flag, the same run answers and
+labels the answer `NOTHING COULD BE CHECKED`.
+
+A verifier with no `preVoo` is assumed able to check. Silence is not a refusal,
+and the harness will not invent a refusal the verifier did not make.
+
+The two halves of a verifier are expected to agree. A `preVoo` that announces "I
+will not be able to check" beside a `conferir` that returns `passou` is a verifier
+lying to itself, and the harness believes `conferir` — it is the half that saw the
+output. Nothing enforces the agreement, because a verifier is other people's code
+and the harness cannot know which half is wrong.
+
+## Tools, and why they are not here
+
+The obvious next feature is validating tool calls — checking a tool's arguments
+before it runs and its result after. It is missing on purpose, and the reason is
+worth stating rather than leaving as an oversight.
+
+A tool call requires the model to be able to *ask* for one, which means
+`ModeloAdapter.responder` can no longer return a string. It would return either
+text or a tool request, and the single-method boundary above — the thing that
+makes a real provider a thin file and keeps the harness from growing into a
+gateway — stops being single-method.
+
+That may well be the right trade later. It is a change to a load-bearing
+decision, not an addition, and it belongs in its own design rather than bolted
+onto this one.
 
 ## Failure states
 

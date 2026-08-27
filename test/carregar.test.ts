@@ -80,22 +80,25 @@ describe('validarVerificadores', () => {
 });
 
 describe('VERIFICADORES_EMBUTIDOS', () => {
+  // Pelo registro, que é como a produção chama: duas entradas do mapa deixaram de
+  // ser função pura quando ganharam pré-voo, e um teste que as chamava direto
+  // testava a forma do mapa, não o comportamento do verificador.
+  const reg = criarRegistro(VERIFICADORES_EMBUTIDOS);
+  const conferir = (nome: string, saida: string, pedido: string) => reg.conferir(nome, saida, pedido);
+
   it('termos-proibidos fails on a forbidden term supplied in the request', async () => {
-    const v = VERIFICADORES_EMBUTIDOS['termos-proibidos']!;
-    const r = await v('we found great synergy', 'rewrite this. forbidden: synergy, leverage');
+    const r = await conferir('termos-proibidos', 'we found great synergy', 'rewrite this. forbidden: synergy, leverage');
     assert.equal(r.estado, 'falhou');
     assert.match(r.estado === 'falhou' ? r.motivo : '', /synergy/);
   });
 
   it('termos-proibidos cannot check when the request lists no terms', async () => {
-    const v = VERIFICADORES_EMBUTIDOS['termos-proibidos']!;
-    const r = await v('anything', 'rewrite this');
+    const r = await conferir('termos-proibidos', 'anything', 'rewrite this');
     assert.equal(r.estado, 'nao_deu_para_conferir');
   });
 
   it('campos-obrigatorios fails when a required field is absent', async () => {
-    const v = VERIFICADORES_EMBUTIDOS['campos-obrigatorios']!;
-    const r = await v('subject: a cat\n', 'brief. required: subject, aspect, mood');
+    const r = await conferir('campos-obrigatorios', 'subject: a cat\n', 'brief. required: subject, aspect, mood');
     assert.equal(r.estado, 'falhou');
     assert.match(r.estado === 'falhou' ? r.motivo : '', /aspect|mood/);
   });
@@ -106,8 +109,7 @@ describe('VERIFICADORES_EMBUTIDOS', () => {
     // present field read as missing. The run loop withholds output on a failure —
     // so a correct answer was withheld, and the reason named a field that was
     // right there.
-    const v = VERIFICADORES_EMBUTIDOS['campos-obrigatorios']!;
-    const r = await v('subject: a cat\ncost (usd): 40\n', 'brief. required: cost (usd), subject');
+    const r = await conferir('campos-obrigatorios', 'subject: a cat\ncost (usd): 40\n', 'brief. required: cost (usd), subject');
     assert.equal(r.estado, 'passou');
   });
 
@@ -115,14 +117,12 @@ describe('VERIFICADORES_EMBUTIDOS', () => {
     // `c++ notes` is `/^\s*c++ notes\s*:/im` — a SyntaxError. The registry would
     // turn the throw into `nao_deu_para_conferir`, which is honest, but the check
     // still never runs. Escaping lets it actually run.
-    const v = VERIFICADORES_EMBUTIDOS['campos-obrigatorios']!;
-    const r = await v('c++ notes: yes\n', 'brief. required: c++ notes');
+    const r = await conferir('campos-obrigatorios', 'c++ notes: yes\n', 'brief. required: c++ notes');
     assert.equal(r.estado, 'passou');
   });
 
   it('metrica-unica fails when two metrics are proposed', async () => {
-    const v = VERIFICADORES_EMBUTIDOS['metrica-unica']!;
-    const r = await v('metric: signups\nmetric: revenue\n', 'design an experiment');
+    const r = await conferir('metrica-unica', 'metric: signups\nmetric: revenue\n', 'design an experiment');
     assert.equal(r.estado, 'falhou');
   });
 });

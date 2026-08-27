@@ -10,7 +10,7 @@ import type { Agente } from '../agente/definicao.ts';
 import { escolher } from '../agente/selecao.ts';
 import type { ModeloAdapter } from '../modelo/adaptador.ts';
 import type { Registro } from '../verificacao/registro.ts';
-import type { Veredito } from '../verificacao/veredito.ts';
+import type { NaoDeuParaConferir, Veredito } from '../verificacao/veredito.ts';
 import type { Transcricao } from '../transcricao/transcricao.ts';
 
 export interface OpcoesDeRodada {
@@ -18,6 +18,17 @@ export interface OpcoesDeRodada {
   registro: Registro;
   modelo: ModeloAdapter;
   pedido: string;
+  /**
+   * "Do not answer what you cannot check."
+   *
+   * Off by default, because refusing to answer is a strong thing to do on the
+   * caller's behalf without being asked. On, it turns the pre-flight from advice
+   * into a contract: when nothing can be checked, the request is refused before
+   * the model is called. It is the one place where this harness withholds for an
+   * absence rather than a failure, and it is legitimate exactly because the
+   * caller asked for it.
+   */
+  exigirConferencia?: boolean;
 }
 
 /** `verificador: motivo · verificador: motivo` — every reason, never just the first. */
@@ -29,6 +40,7 @@ export async function rodar({
   registro,
   modelo,
   pedido,
+  exigirConferencia = false,
 }: OpcoesDeRodada): Promise<Transcricao> {
   const escolha = escolher(agentes, pedido);
 
@@ -40,6 +52,7 @@ export async function rodar({
           pedido,
           pontuacoes: escolha.pontuacoes,
           vereditos: [],
+          preVoo: [],
           disposicao: 'sem_agente',
           motivo: 'no agent claims this request',
         }
@@ -47,13 +60,40 @@ export async function rodar({
           pedido,
           pontuacoes: escolha.pontuacoes,
           vereditos: [],
+          preVoo: [],
           disposicao: 'ambigua',
           motivo: `more than one agent claims this request: ${escolha.empatados.join(', ')}`,
         };
   }
 
   const agente = escolha.agente;
-  const base = { pedido, agente: agente.nome, pontuacoes: escolha.pontuacoes };
+
+  // Pré-voo, antes de qualquer gasto: o que já se sabe que não vai dar para
+  // conferir, sabendo-se apenas o pedido.
+  const preVoo: NaoDeuParaConferir[] = [];
+  for (const nome of agente.verificadores) {
+    const impedimento = await registro.podeConferir(nome, pedido);
+    if (impedimento) preVoo.push(impedimento);
+  }
+
+  const base = { pedido, agente: agente.nome, pontuacoes: escolha.pontuacoes, preVoo };
+
+  // Nada declarado, ou tudo declarado impedido: nada será conferido. Sem a
+  // exigência isso vira rótulo depois da resposta; com ela, vira recusa agora,
+  // e a chamada de modelo não acontece.
+  const nadaConferivel =
+    agente.verificadores.length === 0 || preVoo.length === agente.verificadores.length;
+  if (exigirConferencia && nadaConferivel) {
+    return {
+      ...base,
+      vereditos: [],
+      disposicao: 'recusada_sem_conferencia',
+      motivo:
+        agente.verificadores.length === 0
+          ? 'this agent declares no checks, and the caller required checking'
+          : juntar(preVoo),
+    };
+  }
 
   let saida: string;
   try {

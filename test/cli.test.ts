@@ -89,6 +89,43 @@ describe('conferente perguntar', () => {
     assert.match(r.stdout, /agent: experimento-de-growth/);
   });
 
+  it('--exigir-conferencia refuses before the model runs, and exits 1', () => {
+    // `brief-de-imagem` declares one check and that check has a pre-flight, so a
+    // request with no `required:` cannot be checked at all. Without the flag the
+    // same request is answered and labelled; with it, refused.
+    const r = rodarCli('perguntar', 'write an image brief for a cat', '--exigir-conferencia');
+    assert.equal(r.status, 1);
+    assert.match(r.stdout, /\[REFUSED — NOTHING CAN BE CHECKED\]/);
+    assert.match(r.stdout, /no required fields/);
+    assert.ok(!r.stdout.includes('subject:'), 'nothing may be answered when the run was refused');
+  });
+
+  it('the same request without the flag is answered and labelled', () => {
+    const r = rodarCli(
+      'perguntar',
+      'write an image brief for a cat',
+      '--resposta',
+      'subject: a cat',
+    );
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /\[NOTHING COULD BE CHECKED\]/);
+    assert.match(r.stdout, /subject: a cat/);
+  });
+
+  it('--exigir-conferencia does not refuse when one of several checks can run', () => {
+    // The contract is "do not answer what you cannot check", not "check
+    // everything". `voz-de-marca` declares two checks and only one objects.
+    const r = rodarCli(
+      'perguntar',
+      'rewrite this in our brand voice',
+      '--resposta',
+      'clause 4 applied: plain words.',
+      '--exigir-conferencia',
+    );
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /\[PARTIALLY CHECKED\]/);
+  });
+
   it('perguntar with no request prints usage and exits 1', () => {
     const r = rodarCli('perguntar');
     assert.equal(r.status, 1);

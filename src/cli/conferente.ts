@@ -23,7 +23,8 @@ import type { ModeloAdapter } from '../modelo/adaptador.ts';
 import { rodar } from '../execucao/rodar.ts';
 import { renderizar } from '../transcricao/transcricao.ts';
 
-const USO = 'usage: conferente [agentes | perguntar "<request>" [--resposta "<answer>"]] [--agentes <dir>]';
+const USO =
+  'usage: conferente [agentes | perguntar "<request>" [--resposta "<answer>"] [--exigir-conferencia]] [--agentes <dir>]';
 
 /** Flags that take a value, so the walk below knows to skip the value too. */
 const COM_VALOR = new Set(['--agentes', '--resposta']);
@@ -101,7 +102,15 @@ if (comando === 'perguntar') {
       ? criarModeloFalso()
       : { async responder() { return fornecida; } };
 
-  const t = await rodar({ agentes, registro, modelo, pedido });
+  // `--exigir-conferencia`: não responda o que não dá para conferir. Sem ele, a
+  // mesma pergunta é respondida e o rótulo conta a verdade.
+  const t = await rodar({
+    agentes,
+    registro,
+    modelo,
+    pedido,
+    exigirConferencia: flags.has('--exigir-conferencia'),
+  });
   console.log(`\n${renderizar(t)}\n`);
 
   // 0 when an answer was produced, 1 when none was. Anything else would let a

@@ -24,6 +24,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow
 - `conferente perguntar` and `conferente agentes`, with `--resposta` to supply an
   answer and watch the checks run on it.
 - Four example agents, one of which declares no verifiers on purpose.
+- **Pre-flight.** A verifier may declare `preVoo`, which sees only the request and
+  answers whether the check can run at all. A verifier that reads its criteria
+  from the request already knows: if the request lists no forbidden terms, no
+  output will change that. Advisory by default — it lands in the transcript and
+  the caller can fix the request instead of paying for an answer nobody can check.
+- **`--exigir-conferencia`**, which turns that advice into a contract: do not
+  answer what you cannot check. When every declared check reports it cannot run,
+  the request is refused before the model is called. The one place this harness
+  withholds for an absence rather than a failure, legitimate exactly because the
+  caller asked for it. New disposition `recusada_sem_conferencia`.
+- The OpenTelemetry GenAI mapping, in the README. No exporter ships — that would
+  mean a dependency — but the mapping is written down so the omission reads as a
+  decision.
 
 ### Fixed
 - `PARTIALLY CHECKED` was printed above output when *every* declared check had

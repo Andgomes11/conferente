@@ -13,7 +13,7 @@
  */
 import { escaparRegex } from '../texto/regex.ts';
 import { falhou, naoDeuParaConferir, passou, type Veredito } from './veredito.ts';
-import type { Verificador } from './registro.ts';
+import type { EntradaDeRegistro, Verificador } from './registro.ts';
 
 /** Reads `chave: a, b, c` out of the request. */
 function listaDoPedido(pedido: string, chave: string): string[] | undefined {
@@ -65,9 +65,29 @@ const citaClausula: Verificador = (saida): Veredito =>
     ? passou('cita-clausula')
     : falhou('cita-clausula', 'output does not cite the guide clause it applied');
 
-export const VERIFICADORES_EMBUTIDOS: Record<string, Verificador> = {
-  'termos-proibidos': termosProibidos,
-  'campos-obrigatorios': camposObrigatorios,
+/**
+ * The two that read criteria from the request can answer before the model runs.
+ *
+ * If the request lists no forbidden terms, no output will change that — so the
+ * caller can be told now, and spend nothing. The two that judge the output's own
+ * shape have no pre-flight: whether a `metric:` line exists is not knowable from
+ * the request, and claiming otherwise would be inventing a refusal.
+ */
+export const VERIFICADORES_EMBUTIDOS: Record<string, EntradaDeRegistro> = {
+  'termos-proibidos': {
+    conferir: termosProibidos,
+    preVoo: (pedido) =>
+      listaDoPedido(pedido, 'forbidden')
+        ? passou('termos-proibidos')
+        : naoDeuParaConferir('termos-proibidos', 'the request lists no forbidden terms'),
+  },
+  'campos-obrigatorios': {
+    conferir: camposObrigatorios,
+    preVoo: (pedido) =>
+      listaDoPedido(pedido, 'required')
+        ? passou('campos-obrigatorios')
+        : naoDeuParaConferir('campos-obrigatorios', 'the request lists no required fields'),
+  },
   'metrica-unica': metricaUnica,
   'cita-clausula': citaClausula,
 };
