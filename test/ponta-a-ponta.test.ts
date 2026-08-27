@@ -73,6 +73,31 @@ describe('ponta a ponta', () => {
     assert.match(renderizar(t), /no forbidden terms/i);
   });
 
+  it('a shipped agent declares no checks, so NOT CHECKED is reproducible', async () => {
+    // The README prints a `[NOT CHECKED]` transcript, and for a while no shipped
+    // agent could produce one — every example declared checks. A README showing
+    // output a reader cannot reproduce is the wrong kind of gap for this project
+    // in particular.
+    //
+    // It also demonstrates the claim the disposition table rests on: an agent
+    // with no checks is legitimate. What is not legitimate is presenting its
+    // output as checked.
+    const { agentes, registro } = montar();
+    const semChecagem = agentes.filter((a) => a.verificadores.length === 0);
+    assert.ok(semChecagem.length > 0, 'at least one shipped agent must declare no checks');
+
+    const t = await rodar({
+      agentes,
+      registro,
+      modelo: criarModeloFalso({ 'first draft': 'here is an answer nobody checked.' }),
+      pedido: 'give me a first draft',
+    });
+    assert.equal(t.disposicao, 'nao_conferida');
+    assert.equal(t.saida, 'here is an answer nobody checked.');
+    assert.match(renderizar(t), /^\[NOT CHECKED\]/);
+    assert.match(renderizar(t), /no checks were declared/);
+  });
+
   it('an unclaimed request never reaches the model', async () => {
     const { agentes, registro } = montar();
     const t = await rodar({

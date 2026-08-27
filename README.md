@@ -32,7 +32,7 @@ demo that needs a secret is a demo nobody runs.
 
 ```bash
 npm install
-npm test          # 72 tests
+npm test          # 73 tests
 npm run typecheck
 
 npm run conferente -- agentes
@@ -120,15 +120,20 @@ clause 4 applied: plain words.
 exit 0
 ```
 
-An agent that declares no checks. Legitimate, and labelled:
+An agent that declares no checks. Legitimate, and labelled — `rascunho-livre`
+ships with none, because there is no mechanical check for whether a draft is any
+good and inventing one would be worse than having none:
 
 ```
+$ conferente perguntar "give me a first draft of the launch note" \
+    --resposta "Draft: we ship on Tuesday. Assumed: the date is fixed. Left out: pricing."
+
 [NOT CHECKED]
-agent: solto
+agent: rascunho-livre
 reason: this agent declares no checks
   no checks were declared for this agent
 
-here is an answer nobody checked.
+Draft: we ship on Tuesday. Assumed: the date is fixed. Left out: pricing.
 
 exit 0
 ```

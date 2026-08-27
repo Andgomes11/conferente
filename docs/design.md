@@ -154,7 +154,7 @@ numeric answer.
 
 ## Example agents
 
-Three, deliberately generic, in `agentes/`:
+Four, deliberately generic, in `agentes/`:
 
 - **voz-de-marca** — rewrites text against a supplied style guide. Verifiers:
   forbidden-terms check, reading-level bound, and “cites the guide clause it
@@ -164,6 +164,16 @@ Three, deliberately generic, in `agentes/`:
   person in the subject.
 - **experimento-de-growth** — proposes one experiment. Verifiers: has a single
   measurable metric, has a stated sample size, and declares what would falsify it.
+
+- **rascunho-livre** — writes a first draft. Verifiers: **none**, on purpose.
+
+The fourth exists for two reasons. There is genuinely no mechanical check for
+whether a draft is any good, and inventing one would be worse than having none:
+the harness would report a check that measures nothing. And without it the
+`NOT CHECKED` row of the disposition table was a claim no reader could reproduce —
+every shipped agent declared checks, so the README printed a transcript nobody
+could produce themselves. In this project in particular, that is the wrong kind of
+gap.
 
 They contain no organisation's content. The style guide and brand constraints are
 inputs, supplied per request.
