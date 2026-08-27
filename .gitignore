@@ -4,3 +4,16 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# The engineering is the portfolio; the working notes are not.
+#
+# `docs/plan.md` is the implementation plan and its log: 2,000 lines of
+# task-by-task steps plus the eight deviations found while executing them, each
+# with the measurement that exposed it. It is honest and it is useful, and it is
+# also scaffolding — a reader arriving at this repository should meet the design
+# and the code, not the ladder used to build them.
+#
+# It stays on disk. `docs/design.md` stays in the repository, because that one is
+# the spec: the disposition table lives there and CONTRIBUTING points at it.
+docs/plan.md
+
